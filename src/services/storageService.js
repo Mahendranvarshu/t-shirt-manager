@@ -38,7 +38,13 @@ export const getStoredProducts = () => {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(SAMPLE_PRODUCTS));
       return SAMPLE_PRODUCTS;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // If old cached data had small dollar prices (< 100), upgrade to realistic INR prices
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].sellingPrice < 100) {
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(SAMPLE_PRODUCTS));
+      return SAMPLE_PRODUCTS;
+    }
+    return parsed;
   } catch {
     return SAMPLE_PRODUCTS;
   }
@@ -55,7 +61,13 @@ export const getStoredSales = () => {
       localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(SAMPLE_SALES));
       return SAMPLE_SALES;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // If old cached sales had small dollar prices (< 100), upgrade to INR
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].unitPrice < 100) {
+      localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(SAMPLE_SALES));
+      return SAMPLE_SALES;
+    }
+    return parsed;
   } catch {
     return SAMPLE_SALES;
   }
