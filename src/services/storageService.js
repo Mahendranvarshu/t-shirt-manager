@@ -7,20 +7,21 @@ const STORAGE_KEYS = {
   SETTINGS: 'tee_manager_settings',
 };
 
-// Default business settings
+// Default business settings - Locked to Indian Rupees (₹)
 const DEFAULT_SETTINGS = {
-  storeName: 'ThreadVibe Apparel Co.',
-  currency: '$',
+  storeName: 'T-Shirt Studio',
+  currency: '₹',
   googleSheetUrl: '',
   autoEmailReceipts: true,
   lowStockThreshold: 5,
-  ownerEmail: 'orders@threadvibe.com',
+  ownerEmail: '',
 };
 
 export const getStoredSettings = () => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS;
+    const parsed = data ? JSON.parse(data) : {};
+    return { ...DEFAULT_SETTINGS, ...parsed, currency: '₹' }; // Always Indian Rupees
   } catch {
     return DEFAULT_SETTINGS;
   }

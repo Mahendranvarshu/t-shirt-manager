@@ -1,191 +1,137 @@
-import React, { useRef } from 'react';
-import { X, Printer, Mail, CheckCircle2, Copy, Shirt, ExternalLink } from 'lucide-react';
+import React from 'react';
+import { X, Mail, MessageSquare, Printer, CheckCircle2 } from 'lucide-react';
 
-export const ReceiptModal = ({ sale, isOpen, onClose, currency, storeName = 'ThreadFlow Apparel' }) => {
+export const ReceiptModal = ({ sale, isOpen, onClose, storeName = 'T-Shirt Studio' }) => {
   if (!isOpen || !sale) return null;
 
-  const fmt = (val) => `${currency}${Number(val || 0).toFixed(2)}`;
-  const dateStr = new Date(sale.date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
+  const dateStr = new Date(sale.date).toLocaleDateString('en-IN', {
     day: 'numeric',
+    month: 'short',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
 
-  const handlePrint = () => {
-    window.print();
+  const receiptSummary = 
+    `*${storeName} - Bill Receipt*\n` +
+    `Order: #${sale.id}\n` +
+    `Item: ${sale.productName}\n` +
+    `Size: ${sale.size} | Qty: ${sale.quantity}\n` +
+    `Total: ₹${sale.totalRevenue}\n` +
+    `Customer: ${sale.customerName}\n` +
+    `Payment: ${sale.paymentMethod || 'Paid'}\n` +
+    `Date: ${dateStr}`;
+
+  const handleWhatsApp = () => {
+    const text = encodeURIComponent(receiptSummary);
+    const phone = (sale.customerPhone || '').replace(/[^0-9]/g, '');
+    const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
+    window.open(url, '_blank');
   };
 
-  const handleSendEmail = () => {
-    const subject = encodeURIComponent(`Receipt for your T-Shirt Order #${sale.id} - ${storeName}`);
+  const handleEmail = () => {
+    const subject = encodeURIComponent(`Bill Receipt #${sale.id} - ${storeName}`);
     const body = encodeURIComponent(
-      `Hello ${sale.customerName || 'Valued Customer'},\n\n` +
-      `Thank you for shopping with ${storeName}!\n\n` +
-      `--- ORDER SUMMARY ---\n` +
+      `Hello ${sale.customerName},\n\n` +
+      `Thank you for shopping at ${storeName}!\n\n` +
+      `ORDER DETAILS:\n` +
       `Order ID: #${sale.id}\n` +
-      `Date: ${dateStr}\n` +
-      `Item: ${sale.productName}\n` +
+      `T-Shirt: ${sale.productName}\n` +
       `Size: ${sale.size}\n` +
       `Quantity: ${sale.quantity}\n` +
-      `Unit Price: ${fmt(sale.unitPrice)}\n` +
-      `Total Paid: ${fmt(sale.totalRevenue)}\n` +
-      `Payment Method: ${sale.paymentMethod || 'Paid'}\n\n` +
+      `Total Paid: ₹${sale.totalRevenue}\n` +
+      `Payment: ${sale.paymentMethod || 'Paid'}\n` +
+      `Date: ${dateStr}\n\n` +
       `Product Image: ${sale.productImage || ''}\n\n` +
-      `If you have any questions or need sizing assistance, simply reply to this email.\n\n` +
-      `Best regards,\n` +
-      `${storeName}`
+      `Best regards,\n${storeName}`
     );
-
     window.open(`mailto:${sale.customerEmail || ''}?subject=${subject}&body=${body}`, '_blank');
   };
 
-  const copyReceiptText = () => {
-    const text = `Order #${sale.id} - ${storeName}\nCustomer: ${sale.customerName}\nItem: ${sale.productName} (Size: ${sale.size})\nQty: ${sale.quantity}\nTotal: ${fmt(sale.totalRevenue)}`;
-    navigator.clipboard.writeText(text);
-    alert('Receipt summary copied to clipboard!');
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
         
-        {/* Modal Controls Header */}
-        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Sales Invoice & Customer Receipt
-          </span>
-          <button 
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 cursor-pointer"
-          >
+        {/* Header */}
+        <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="font-extrabold text-xs text-white">Bill Receipt</span>
+          </div>
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Printable Receipt Card */}
-        <div id="printable-receipt" className="p-6 bg-white space-y-6">
+        {/* Receipt Body */}
+        <div className="p-4 space-y-3.5 text-xs">
           
-          {/* Brand & Status */}
-          <div className="text-center space-y-1">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-600/20">
-              <Shirt className="w-6 h-6" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 m-0">{storeName}</h2>
-            <p className="text-xs text-slate-500">Official Purchase Invoice</p>
-            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold mt-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Payment Successful</span>
+          {/* Order ID & Total */}
+          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-1">
+            <span className="text-[10px] font-mono text-slate-400 font-bold block">ORDER #{sale.id}</span>
+            <div className="text-2xl font-black text-slate-900">₹{sale.totalRevenue}</div>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full inline-block">
+              {sale.paymentMethod || 'Paid'}
+            </span>
+          </div>
+
+          {/* Product Snapshot */}
+          <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-2xl">
+            <img src={sale.productImage} alt="Tee" className="w-12 h-12 rounded-xl object-cover border border-slate-200" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-extrabold text-xs text-slate-900 truncate m-0">{sale.productName}</h4>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="px-2 py-0.2 rounded-md bg-indigo-600 text-white font-black text-[10px]">
+                  Size {sale.size}
+                </span>
+                <span className="text-[10px] text-slate-500 font-bold">Qty: {sale.quantity}</span>
+              </div>
             </div>
           </div>
 
-          {/* Order Details Bar */}
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1.5 text-xs">
+          {/* Customer Contact */}
+          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-0.5 text-[11px]">
             <div className="flex justify-between">
-              <span className="text-slate-500">Order ID:</span>
-              <span className="font-mono font-bold text-slate-800">#{sale.id}</span>
+              <span className="text-slate-500">Customer:</span>
+              <span className="font-bold text-slate-900">{sale.customerName || 'Walk-in'}</span>
             </div>
+            {sale.customerPhone && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Phone:</span>
+                <span className="font-bold text-slate-900">{sale.customerPhone}</span>
+              </div>
+            )}
+            {sale.customerEmail && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Email:</span>
+                <span className="font-semibold text-slate-700 truncate max-w-[170px]">{sale.customerEmail}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-slate-500">Date:</span>
               <span className="text-slate-700">{dateStr}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Payment:</span>
-              <span className="font-semibold text-slate-800">{sale.paymentMethod || 'Card'}</span>
-            </div>
           </div>
 
-          {/* Customer Info */}
-          {(sale.customerName || sale.customerEmail) && (
-            <div className="text-xs space-y-1 border-t border-slate-100 pt-3">
-              <span className="font-bold text-slate-700 block">Customer Information:</span>
-              <p className="text-slate-900 font-semibold m-0">{sale.customerName || 'Customer'}</p>
-              {sale.customerEmail && (
-                <p className="text-slate-500 m-0 flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-slate-400" />
-                  <span>{sale.customerEmail}</span>
-                </p>
-              )}
-              {sale.customerPhone && (
-                <p className="text-slate-500 m-0">{sale.customerPhone}</p>
-              )}
-            </div>
-          )}
-
-          {/* Product Item Card with Image & Size */}
-          <div className="border border-slate-200 rounded-2xl p-3 flex gap-3 items-center bg-slate-50/50">
-            <img 
-              src={sale.productImage || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=200'} 
-              alt={sale.productName}
-              className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0" 
-            />
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-xs text-slate-900 truncate m-0">{sale.productName}</h4>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-black text-xs">
-                  Size {sale.size}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  Qty: <strong>{sale.quantity}</strong>
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 font-semibold mt-1">
-                {fmt(sale.unitPrice)} each
-              </p>
-            </div>
-          </div>
-
-          {/* Totals Calculation */}
-          <div className="space-y-1.5 pt-2 border-t border-slate-200 text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span>Subtotal:</span>
-              <span>{fmt(sale.totalRevenue)}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Tax / VAT:</span>
-              <span>{fmt(0)}</span>
-            </div>
-            <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
-              <span>Total Paid:</span>
-              <span className="text-emerald-600">{fmt(sale.totalRevenue)}</span>
-            </div>
-          </div>
-
-          {/* Store Footer Note */}
-          <div className="text-center text-[11px] text-slate-400 pt-2 border-t border-dashed border-slate-200">
-            Thank you for choosing our tees! Keep this receipt for exchange within 14 days.
-          </div>
-
-        </div>
-
-        {/* Action Buttons Toolbar */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-          <button
-            onClick={copyReceiptText}
-            className="p-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl flex items-center gap-1 cursor-pointer"
-            title="Copy Text"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Copy</span>
-          </button>
-
-          <div className="flex items-center gap-2">
+          {/* Share Actions */}
+          <div className="space-y-2 pt-1">
             <button
-              onClick={handlePrint}
-              className="px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
+              onClick={handleWhatsApp}
+              className="w-full py-2.5 bg-emerald-600 active:bg-emerald-700 text-white rounded-xl font-black text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print</span>
+              <MessageSquare className="w-4 h-4 fill-white" />
+              <span>Share on WhatsApp</span>
             </button>
 
             <button
-              onClick={handleSendEmail}
-              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 flex items-center gap-1.5 cursor-pointer"
+              onClick={handleEmail}
+              className="w-full py-2.5 bg-indigo-600 active:bg-indigo-700 text-white rounded-xl font-black text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Mail className="w-3.5 h-3.5" />
-              <span>Send Mail Receipt</span>
+              <Mail className="w-4 h-4" />
+              <span>Send Email Receipt</span>
             </button>
           </div>
+
         </div>
 
       </div>

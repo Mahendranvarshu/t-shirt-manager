@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Navbar } from './components/Navbar';
 import { DashboardTab } from './components/DashboardTab';
 import { ProductsTab } from './components/ProductsTab';
@@ -24,14 +24,13 @@ import {
 } from './services/storageService';
 
 import { postToGoogleSheet, fetchFromGoogleSheet } from './services/googleSheetsApi';
-import { CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState(getStoredProducts);
   const [sales, setSales] = useState(getStoredSales);
   const [settings, setSettings] = useState(getStoredSettings);
-  const [currency, setCurrency] = useState(settings.currency || '$');
   const [isSheetConnected, setIsSheetConnected] = useState(Boolean(settings.googleSheetUrl));
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -46,23 +45,15 @@ export function App() {
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Toast Notification state
+  // Toast Notification
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 3000);
   };
 
-  // Sync currency changes to settings
-  const handleCurrencyChange = (newCurr) => {
-    setCurrency(newCurr);
-    const updated = { ...settings, currency: newCurr };
-    setSettings(updated);
-    saveStoredSettings(updated);
-  };
-
-  // Compute live analytics whenever sales or products change
+  // Compute live analytics
   const analytics = useMemo(() => {
     return computeAnalytics(sales, products);
   }, [sales, products]);
@@ -80,21 +71,21 @@ export function App() {
     setSales(updatedSales);
     setActiveReceipt(newSale);
     setIsReceiptOpen(true);
-    showToast(`Sale recorded for ${saleData.productName} (Size ${saleData.size})! Stock decremented.`);
+    showToast(`Sold ${saleData.productName} (Size ${saleData.size})!`);
   };
 
   // Product CRUD Handlers
   const handleSaveProduct = async (productData) => {
     const updated = await saveProductItem(productData, products, settings.googleSheetUrl);
     setProducts(updated);
-    showToast(`Product "${productData.name}" saved successfully!`);
+    showToast(`T-Shirt "${productData.name}" saved!`);
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (confirm('Are you sure you want to delete this T-shirt product?')) {
+    if (confirm('Delete this T-shirt?')) {
       const updated = await deleteProductItem(productId, products, settings.googleSheetUrl);
       setProducts(updated);
-      showToast('Product deleted.', 'info');
+      showToast('Deleted T-shirt', 'info');
     }
   };
 
@@ -104,20 +95,18 @@ export function App() {
       updated = await adjustStockQuantity(productId, size, qty, updated, settings.googleSheetUrl);
     }
     setProducts(updated);
-    showToast('Inventory stock updated!');
+    showToast('Stock updated!');
   };
 
-  // Delete Sale / Refund Handler
   const handleDeleteSale = (saleId) => {
-    if (confirm('Delete this sale record? (Note: this does not automatically restock inventory).')) {
+    if (confirm('Delete this order?')) {
       const updated = sales.filter((s) => s.id !== saleId);
       setSales(updated);
       localStorage.setItem('tee_manager_sales', JSON.stringify(updated));
-      showToast('Sale record removed.', 'info');
+      showToast('Order deleted', 'info');
     }
   };
 
-  // Push local data to Google Sheet
   const handleSyncPush = async () => {
     if (!settings.googleSheetUrl) return;
     setIsSyncing(true);
@@ -128,13 +117,12 @@ export function App() {
     });
     setIsSyncing(false);
     if (res.success) {
-      showToast('All products and sales synced to Google Sheet!');
+      showToast('Synced to Google Sheet!');
     } else {
-      showToast('Push sync failed: ' + res.message, 'error');
+      showToast('Push failed', 'error');
     }
   };
 
-  // Pull data from Google Sheet
   const handleSyncPull = async () => {
     if (!settings.googleSheetUrl) return;
     setIsSyncing(true);
@@ -148,29 +136,26 @@ export function App() {
         setSales(data.sales);
         localStorage.setItem('tee_manager_sales', JSON.stringify(data.sales));
       }
-      showToast('Data pulled successfully from Google Sheet!');
+      showToast('Pulled latest data from Sheet!');
     } else {
-      showToast('Could not pull data. Make sure Web App is accessible.', 'error');
+      showToast('Could not fetch from Sheet', 'error');
     }
   };
 
-  // Reset to Sample Data
   const handleResetData = () => {
     const { products: p, sales: s } = resetToSampleData();
     setProducts(p);
     setSales(s);
-    showToast('Reset to sample T-shirt data successfully!');
+    showToast('Reset to demo data!');
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-100 flex flex-col font-sans select-none">
       
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border bg-slate-900 text-white text-xs font-semibold animate-in slide-in-from-bottom-5 duration-200">
-          {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-          {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400" />}
-          {toast.type === 'info' && <Info className="w-4 h-4 text-blue-400" />}
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-xl bg-slate-900 text-white text-xs font-bold animate-in slide-in-from-top-4 duration-200">
+          {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
           <span>{toast.message}</span>
         </div>
       )}
@@ -185,21 +170,14 @@ export function App() {
         }}
         onOpenSettings={() => setIsSettingsOpen(true)}
         isSheetConnected={isSheetConnected}
-        currency={currency}
-        setCurrency={handleCurrencyChange}
-        onSyncNow={handleSyncPush}
-        isSyncing={isSyncing}
         settings={settings}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Mobile-First Main Content Container */}
+      <main className="flex-1 w-full max-w-lg mx-auto px-3.5 pt-3 pb-24">
         {activeTab === 'dashboard' && (
           <DashboardTab
             analytics={analytics}
-            products={products}
-            sales={sales}
-            currency={currency}
             onOpenNewSale={() => setIsNewSaleOpen(true)}
             onNavigateToStock={() => setActiveTab('products')}
           />
@@ -225,7 +203,6 @@ export function App() {
               setPreselectedProduct(prod);
               setIsNewSaleOpen(true);
             }}
-            currency={currency}
           />
         )}
 
@@ -238,15 +215,12 @@ export function App() {
               setIsReceiptOpen(true);
             }}
             onDeleteSale={handleDeleteSale}
-            onOpenNewSale={() => setIsNewSaleOpen(true)}
-            currency={currency}
           />
         )}
 
         {activeTab === 'customers' && (
           <CustomersTab
             sales={sales}
-            currency={currency}
             storeName={settings.storeName}
           />
         )}
@@ -259,7 +233,6 @@ export function App() {
         products={products}
         preselectedProduct={preselectedProduct}
         onRecordSale={handleRecordSale}
-        currency={currency}
       />
 
       <ProductModal
@@ -267,7 +240,6 @@ export function App() {
         onClose={() => setIsProductModalOpen(false)}
         onSave={handleSaveProduct}
         editingProduct={editingProduct}
-        currency={currency}
       />
 
       <StockAdjustModal
@@ -275,14 +247,12 @@ export function App() {
         onClose={() => setIsStockModalOpen(false)}
         product={stockProduct}
         onSaveStock={handleAdjustStock}
-        currency={currency}
       />
 
       <ReceiptModal
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}
         sale={activeReceipt}
-        currency={currency}
         storeName={settings.storeName}
       />
 
@@ -294,7 +264,7 @@ export function App() {
           setSettings(newSettings);
           saveStoredSettings(newSettings);
           setIsSheetConnected(Boolean(newSettings.googleSheetUrl));
-          showToast('Settings saved successfully!');
+          showToast('Settings saved!');
         }}
         isSheetConnected={isSheetConnected}
         setIsSheetConnected={setIsSheetConnected}
@@ -305,27 +275,6 @@ export function App() {
         sales={sales}
         onResetData={handleResetData}
       />
-
-      {/* Modern Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 mt-12 text-slate-500 text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">{settings.storeName || 'ThreadFlow'}</span>
-            <span>•</span>
-            <span>T-Shirt Business Inventory & P&L Manager</span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Database: {isSheetConnected ? 'Google Sheets (Live)' : 'Local Storage Mode'}</span>
-            <span>•</span>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
-            >
-              Configure Google Sheet
-            </button>
-          </div>
-        </div>
-      </footer>
 
     </div>
   );
