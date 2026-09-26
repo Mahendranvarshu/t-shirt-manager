@@ -1,0 +1,9 @@
+{
+  "appId": "com.mahendran.tshirtmanager",
+  "appName": "T-Shirt Studio",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "short_name": "T-Shirt Studio",
+  "name": "T-Shirt Business & Stock Manager",
+  "description": "Mobile T-shirt inventory, selling, and P&L tracker with Google Sheets DB",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait"
+}
